@@ -1,0 +1,31 @@
+app = "hydra-fullstack"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  METRICS_PORT = "9090"
+  ENV = "production"
+  DB_WAL_ENABLED = "true"
+  MEMORIAL_SEASONAL = "true"
+  MEMORIAL_WEBSOCKET = "true"
+  MEMORIAL_CANVAS = "true"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 2
+
+[mounts]
+  source = "hydra_data"
+  destination = "/root/uploads"

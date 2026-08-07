@@ -1,0 +1,50 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+server
+
+# Test coverage
+coverage.out
+coverage.html
+*.cover
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+hydra.db
+
+# Uploads
+uploads/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Go
+vendor/
+go.sum
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+
+# Temporary
+tmp/
+temp/

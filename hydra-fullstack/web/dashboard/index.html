@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYDRA Alert Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 2rem;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: #111118;
+            border: 1px solid #1e1e2e;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .memory-icon { background: rgba(255,107,107,0.15); }
+        .latency-icon { background: rgba(78,205,196,0.15); }
+        .error-icon { background: rgba(255,230,109,0.15); }
+        .alert-icon { background: rgba(247,37,133,0.15); }
+        .card-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+        .card-value { font-size: 2rem; font-weight: 700; margin-top: 0.5rem; }
+        .memory-value { color: #ff6b6b; }
+        .latency-value { color: #4ecdc4; }
+        .error-value { color: #ffe66d; }
+        .alert-value { color: #f72585; }
+        .progress-bar { width: 100%; height: 8px; background: #1a1a2e; border-radius: 4px; margin-top: 1rem; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+        .status-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .status-ok { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .status-warning { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .status-critical { background: rgba(231,76,60,0.15); color: #e74c3c; }
+        .alert-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #111118; border: 1px solid #1e1e2e; border-radius: 8px; margin-bottom: 0.75rem; }
+        .alert-severity { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+        .severity-critical { background: #e74c3c; }
+        .severity-warning { background: #f39c12; }
+        .severity-info { background: #3498db; }
+        .alert-content { flex: 1; }
+        .alert-type { font-weight: 600; }
+        .alert-message { color: #888; font-size: 0.85rem; }
+        .alert-time { color: #666; font-size: 0.75rem; white-space: nowrap; }
+        .refresh-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .latency-table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
+        .latency-table th, .latency-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #1e1e2e; }
+        .latency-table th { color: #888; font-size: 0.8rem; text-transform: uppercase; }
+        .latency-good { color: #2ecc71; }
+        .latency-warn { color: #f39c12; }
+        .latency-bad { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔥 HYDRA Alert Dashboard</h1>
+        <div style="color:#888; font-size:0.9rem;">Real-time system monitoring & alerting</div>
+    </div>
+    <div class="container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <div class="status-badge status-ok" id="system-status"><span>●</span> System Healthy</div>
+            <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon memory-icon">🧠</div>
+                    <div class="card-title">Memory Usage</div>
+                </div>
+                <div class="card-value memory-value" id="memory-value">--%</div>
+                <div class="progress-bar"><div class="progress-fill" id="memory-bar" style="width:0%; background:#ff6b6b;"></div></div>
+                <div style="margin-top:0.5rem; font-size:0.8rem; color:#666;"><span id="memory-detail">-- MB / -- MB</span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon latency-icon">⚡</div>
+                    <div class="card-title">Render Latency</div>
+                </div>
+                <div class="card-value latency-value" id="latency-value">--s</div>
+                <table class="latency-table">
+                    <tr><th>p50</th><th>p95</th><th>p99</th><th>Max</th></tr>
+                    <tr><td class="latency-value latency-good" id="lat-p50">--</td><td class="latency-value" id="lat-p95">--</td><td class="latency-value" id="lat-p99">--</td><td class="latency-value" id="lat-max">--</td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon error-icon">⚠️</div>
+                    <div class="card-title">Error Rate</div>
+                </div>
+                <div class="card-value error-value" id="error-value">--%</div>
+                <div class="progress-bar"><div class="progress-fill" id="error-bar" style="width:0%; background:#ffe66d;"></div></div>
+                <div style="margin-top:0.5rem; font-size:0.8rem; color:#666;"><span id="error-detail">-- errors / -- requests</span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon alert-icon">🔔</div>
+                    <div class="card-title">Active Alerts</div>
+                </div>
+                <div class="card-value alert-value" id="alert-count">--</div>
+                <div style="margin-top:0.5rem; font-size:0.8rem; color:#666;"><span id="alert-config">Discord: checking...</span></div>
+            </div>
+        </div>
+        <div>
+            <h2 style="margin-bottom:1rem;">Recent Alerts</h2>
+            <div id="alerts-container"><div style="text-align:center; padding:3rem; color:#666;">Loading alerts...</div></div>
+        </div>
+    </div>
+    <script>
+        async function refreshData() {
+            try {
+                const metricsRes = await fetch('/api/metrics');
+                const m = await metricsRes.json();
+                document.getElementById('memory-value').textContent = m.memory_percent.toFixed(1) + '%';
+                document.getElementById('memory-bar').style.width = Math.min(m.memory_percent, 100) + '%';
+                document.getElementById('memory-detail').textContent = `${m.memory_used_mb.toFixed(0)} MB / ${m.memory_total_mb.toFixed(0)} MB`;
+                if (m.memory_percent >= 92) document.getElementById('memory-bar').style.background = '#e74c3c';
+                else if (m.memory_percent >= 80) document.getElementById('memory-bar').style.background = '#f39c12';
+                document.getElementById('latency-value').textContent = m.latency_p95.toFixed(2) + 's';
+                document.getElementById('lat-p50').textContent = m.latency_p50.toFixed(2) + 's';
+                document.getElementById('lat-p95').textContent = m.latency_p95.toFixed(2) + 's';
+                document.getElementById('lat-p99').textContent = m.latency_p99.toFixed(2) + 's';
+                document.getElementById('lat-max').textContent = m.latency_max.toFixed(2) + 's';
+                const latClass = m.latency_p95 > 5 ? 'latency-bad' : m.latency_p95 > 3 ? 'latency-warn' : 'latency-good';
+                document.getElementById('lat-p95').className = 'latency-value ' + latClass;
+                document.getElementById('error-value').textContent = m.error_rate.toFixed(1) + '%';
+                document.getElementById('error-bar').style.width = Math.min(m.error_rate, 100) + '%';
+                document.getElementById('error-detail').textContent = `${m.error_count} errors / ${m.request_count} requests`;
+                const statusBadge = document.getElementById('system-status');
+                if (m.memory_percent >= 92 || m.latency_p95 > 5 || m.error_rate > 15) {
+                    statusBadge.className = 'status-badge status-critical';
+                    statusBadge.innerHTML = '<span>●</span> Critical';
+                } else if (m.memory_percent >= 80 || m.latency_p95 > 3 || m.error_rate > 5) {
+                    statusBadge.className = 'status-badge status-warning';
+                    statusBadge.innerHTML = '<span>●</span> Warning';
+                } else {
+                    statusBadge.className = 'status-badge status-ok';
+                    statusBadge.innerHTML = '<span>●</span> System Healthy';
+                }
+            } catch (e) { console.error('Metrics fetch failed:', e); }
+
+            try {
+                const statusRes = await fetch('/alerts/status');
+                const s = await statusRes.json();
+                document.getElementById('alert-count').textContent = s.active_alerts;
+                document.getElementById('alert-config').textContent = `Discord: ${s.discord_configured ? '✓' : '✗'} | Slack: ${s.slack_configured ? '✓' : '✗'}`;
+            } catch (e) { console.error('Status fetch failed:', e); }
+
+            try {
+                const alertsRes = await fetch('/alerts/history?limit=10');
+                const data = await alertsRes.json();
+                const container = document.getElementById('alerts-container');
+                if (data.alerts.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:3rem; color:#666;">No alerts yet. System is healthy.</div>';
+                } else {
+                    container.innerHTML = data.alerts.map(a => {
+                        const sevClass = a.severity === 'CRITICAL' ? 'severity-critical' : a.severity === 'WARNING' ? 'severity-warning' : 'severity-info';
+                        const timeAgo = getTimeAgo(new Date(a.timestamp));
+                        return `<div class="alert-item"><div class="alert-severity ${sevClass}"></div><div class="alert-content"><div class="alert-type">${a.type}</div><div class="alert-message">${a.message}</div></div><div class="alert-time">${timeAgo}</div></div>`;
+                    }).join('');
+                }
+            } catch (e) { console.error('Alerts fetch failed:', e); }
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'Just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            return `${Math.floor(hours / 24)}d ago`;
+        }
+
+        refreshData();
+        setInterval(refreshData, 5000);
+    </script>
+</body>
+</html>
